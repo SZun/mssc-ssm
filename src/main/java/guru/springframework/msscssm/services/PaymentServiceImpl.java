@@ -13,10 +13,12 @@ import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Created by jt on 2019-08-10.
+ */
 @RequiredArgsConstructor
 @Service
 public class PaymentServiceImpl implements PaymentService {
-
     public static final String PAYMENT_ID_HEADER = "payment_id";
 
     private final PaymentRepository paymentRepository;
@@ -44,11 +46,12 @@ public class PaymentServiceImpl implements PaymentService {
     public StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
 
-        sendEvent(paymentId, sm, PaymentEvent.AUTH_APPROVED);
+        sendEvent(paymentId, sm, PaymentEvent.AUTHORIZE);
 
         return sm;
     }
 
+    @Deprecated // not needed
     @Transactional
     @Override
     public StateMachine<PaymentState, PaymentEvent> declineAuth(Long paymentId) {
@@ -59,23 +62,26 @@ public class PaymentServiceImpl implements PaymentService {
         return sm;
     }
 
-    private void sendEvent(Long paymentId, StateMachine<PaymentState, PaymentEvent> sm, PaymentEvent event) {
+    private void sendEvent(Long paymentId, StateMachine<PaymentState, PaymentEvent> sm, PaymentEvent event){
         Message msg = MessageBuilder.withPayload(event)
                 .setHeader(PAYMENT_ID_HEADER, paymentId)
                 .build();
+
         sm.sendEvent(msg);
     }
 
-    private StateMachine<PaymentState, PaymentEvent> build(Long paymentId) {
-        StateMachine<PaymentState, PaymentEvent> sm = stateMachineFactory.getStateMachine(paymentId.toString());
+    private StateMachine<PaymentState, PaymentEvent> build(Long paymentId){
+        Payment payment = paymentRepository.getOne(paymentId);
+
+        StateMachine<PaymentState, PaymentEvent> sm = stateMachineFactory.getStateMachine(Long.toString(payment.getId()));
 
         sm.stop();
 
         sm.getStateMachineAccessor()
-                .doWithAllRegions(i -> {
-                            i.addStateMachineInterceptor(paymentStateChangeInterceptor);
-                            i.resetStateMachine(new DefaultStateMachineContext<>(paymentRepository.getOne(paymentId).getState(), null, null, null));
-                        });
+                .doWithAllRegions(sma -> {
+                    sma.addStateMachineInterceptor(paymentStateChangeInterceptor);
+                    sma.resetStateMachine(new DefaultStateMachineContext<>(payment.getState(), null, null, null));
+                });
 
         sm.start();
 

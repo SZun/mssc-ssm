@@ -8,10 +8,13 @@ import lombok.NoArgsConstructor;
 import javax.persistence.*;
 import java.math.BigDecimal;
 
+/**
+ * Created by jt on 2019-07-23.
+ */
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @Entity
 public class Payment {
 
@@ -23,5 +26,4 @@ public class Payment {
     private PaymentState state;
 
     private BigDecimal amount;
-
 }

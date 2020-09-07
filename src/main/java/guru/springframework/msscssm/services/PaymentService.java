@@ -5,6 +5,9 @@ import guru.springframework.msscssm.domain.PaymentEvent;
 import guru.springframework.msscssm.domain.PaymentState;
 import org.springframework.statemachine.StateMachine;
 
+/**
+ * Created by jt on 2019-08-10.
+ */
 public interface PaymentService {
 
     Payment newPayment(Payment payment);
@@ -14,5 +17,4 @@ public interface PaymentService {
     StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId);
 
     StateMachine<PaymentState, PaymentEvent> declineAuth(Long paymentId);
-
 }
